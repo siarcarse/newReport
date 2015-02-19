@@ -1,3 +1,8 @@
+<?php
+session_start();
+$users = $_SESSION['UserId']; 
+$calendar = $_REQUEST['calendar']; 
+?>
 <!DOCTYPE html>
 <html lang="es">
 
@@ -9,17 +14,15 @@
     <script src="//code.jquery.com/jquery.js"></script>
     <script src="//netdna.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
     <script src="js/ckeditor/ckeditor.js"></script>
+    <script src="js/ckeditor/config.js"></script>
     <style type="text/css">
     .label {
         color: black;
         font-size: 12px;
-        /*color: #428bca;*/
     }
     .divider {
         height: 40px;
         margin: 0 9px;
-        /*border-top: 1px solid #d6d6d6;*/
-        
         border-bottom: 1px solid #d6d6d6;
     }
     </style>
@@ -68,7 +71,7 @@
                             <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
                                 <span class="label">Informe</span>
                                 <br>
-                                <textarea class="ckeditor" id="report"></textarea>
+                                <textarea class="ckeditor" id="report" name="report"></textarea>
                             </div>
                         </div>
                     </div>
@@ -78,5 +81,66 @@
     </div>
     </div>
 </body>
+<script type="text/javascript">
+var users_session = '<?php echo $users ?>';
+var calendar = '<?php echo $calendar ?>';
+function loadDoctor() {
+    $.ajax({
+            url: 'getDoctor.php',
+            dataType: 'json',
+        })
+        .done(function(data) {
+            var html = '';
+            html += '<option value="">-- Seleccione Doctor --</option>';
+            for (var i = 0; i < data.length; i++) {
+                html += '<option value="' + data[i].id + '">' + data[i].name + '</option>';
+            }
+            $('#doctor').html(html);
+        });
+
+}
+function loadTemplate(users) {
+    var url;
+    if(users !== 0) url = 'listTemplate.php?users='+users;
+    else url = 'listTemplate.php';
+    $.ajax({
+            url: url,
+            dataType: 'json',
+        })
+        .done(function(data) {
+            var html = '';
+            html += '<option value="">-- Seleccione Plantilla --</option>';
+            if(data.length != 1) {
+                for (var i = 0; i < data.length; i++) {
+                    html += '<option value="' + data[i].id + '">' + data[i].name + '</option>';
+                }
+            }
+            $('#template').html(html);
+        });
+
+}
+function createReport(original) {
+    str = original;
+    setEditorValue('report', str);
+}
+function setEditorValue( instanceName, text )
+{
+    var oEditor = CKEDITOR.instances[instanceName] ;
+    oEditor.setData( text ) ;
+}
+$(document).ready(function() {
+    loadDoctor();
+    loadTemplate(0);
+    $('#doctor').change(function(event) {
+        loadTemplate($(this).val());
+    });
+    $('#template').change(function(event) {
+        $.post('findTemplate.php', {id:$(this).val(), calendar:calendar}, function(data, textStatus, xhr) {
+            //console.log(data);
+            createReport(data);
+        });
+    });
+});
+</script>
 
 </html>
